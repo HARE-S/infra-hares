@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Hares (dev)",
+      "Group": "Servers",
+      "Host": "database",
+      "Port": 5432,
+      "MaintenanceDB": "hares_db",
+      "Username": "hares_user",
+      "SSLMode": "prefer"
+    }
+  }
+}

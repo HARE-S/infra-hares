@@ -1,0 +1,33 @@
+# Override de desarrollo (BE-01): expone puertos solo en local.
+# En producción NO se usa este fichero: docker compose -f docker-compose.yml.
+# Ningún servicio salvo el proxy publica puertos al exterior (ver guide/deployment.md).
+services:
+  database:
+    ports:
+      - "5433:5432"
+
+  backend:
+    ports:
+      - "5000:5000"
+
+  # Base de datos para la suite de pruebas (BE-47).
+  db-test:
+    image: ${POSTGRES_IMAGE:-postgres:18-alpine}
+    profiles: ["test"]
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: hares_test
+    volumes:
+      - test_data:/var/lib/postgresql
+    networks:
+      - db-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d hares_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  test_data:
+    name: back-hares_test_data

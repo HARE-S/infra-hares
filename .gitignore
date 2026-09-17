@@ -1,0 +1,22 @@
+# Entornos y secretos
+.env
+.env.*
+*.env
+!.env.example
+
+# Copias de seguridad
+backups/
+
+# Datos y cachés locales
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/

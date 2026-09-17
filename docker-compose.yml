@@ -1,0 +1,129 @@
+# Stack completo HARE-S. Requiere los 4 repos como carpetas hermanas:
+#   back-hares/   front-hares/   proxy-hares/   infra-hares/   (éste)
+# La orquestación vive AQUÍ (infra-hares); cada servicio se construye desde su repo.
+# Red externa previa: docker network create public
+#
+# Único servicio que publica puertos al exterior: proxy (80:80).
+# Los volúmenes con nombre se fijan para conservar los datos de los entornos previos.
+
+services:
+  database:
+    image: ${POSTGRES_IMAGE:-postgres:18-alpine}
+    container_name: hares_database
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - data_dir:/var/lib/postgresql
+    networks:
+      - db-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  backend:
+    build: ../back-hares
+    image: hares-backend:latest
+    container_name: hares_backend
+    restart: always
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      SECRET_KEY: ${SECRET_KEY}
+      DEV_AUTH_BYPASS: ${DEV_AUTH_BYPASS:-true}
+      SESSION_TYPE: ${SESSION_TYPE:-sqlalchemy}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - db-network
+      - backend-network
+
+  import:
+    build: ../back-hares
+    image: hares-backend:latest
+    profiles: ["tools"]
+    command: ["python", "-m", "app.importer"]
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      SECRET_KEY: ${SECRET_KEY}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - db-network
+
+  frontend:
+    build: ../front-hares
+    image: hares-frontend:latest
+    container_name: hares_frontend
+    restart: always
+    networks:
+      - frontend-network
+
+  proxy:
+    build: ../proxy-hares
+    image: hares-proxy:latest
+    container_name: hares_proxy
+    restart: always
+    ports:
+      - "80:80"
+      # Descomenta en producción después de generar certificados SSL
+      # - "443:443"
+      # Para HTTPS en producción, monta los certificados (ver proxy-hares/guide/https-setup.md):
+      # - ../proxy-hares/ssl/cert.pem:/etc/nginx/ssl/cert.pem:ro
+      # - ../proxy-hares/ssl/key.pem:/etc/nginx/ssl/key.pem:ro
+    networks:
+      - public
+      - backend-network
+      - frontend-network
+    depends_on:
+      - backend
+      - frontend
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    profiles: ["tools"]
+    container_name: hares_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@penascal.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "True"
+    ports:
+      - "127.0.0.1:5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+    networks:
+      - db-network
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  data_dir:
+    name: back-hares_data_dir
+  pgadmin_data:
+    name: back-hares_pgadmin_data
+
+networks:
+  db-network:
+  backend-network:
+  frontend-network:
+  public:
+    external: true
