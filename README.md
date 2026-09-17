@@ -45,6 +45,21 @@ docker compose --profile tools up -d pgadmin
 
 Documentación detallada: `guide/deployment.md`.
 
+### Guía rápida de comandos
+
+> ⚠️ `docker compose ...` **solo funciona desde `infra-hares`**. En `back-hares`/`front-hares`/`proxy-hares` no hay `docker-compose.yml` y dará `no configuration file provided`.
+
+| Quieres... | Comando | ¿Desde dónde? |
+|---|---|---|
+| Levantar el stack | `docker compose up -d --build` | `infra-hares` |
+| Ver el stack del proyecto | `docker compose ps` | `infra-hares` |
+| Ver TODOS los contenedores | `docker ps` | Cualquier carpeta |
+| Entrar a un contenedor | `docker exec -it hares_backend bash` | Cualquier carpeta |
+| Parar (sin borrar datos) | `docker compose down` | `infra-hares` |
+| Parar borrando datos ⚠️ | NO usar `docker compose down -v` | — |
+
+Hoja completa: `guide/comandos.md`.
+
 ## Estructura
 
 ```
