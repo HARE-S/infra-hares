@@ -17,6 +17,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - data_dir:/var/lib/postgresql
+    ports:
+      - "5432:5432"
     networks:
       - db-network
     healthcheck:
