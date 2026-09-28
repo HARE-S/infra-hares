@@ -75,5 +75,8 @@ infra-hares/
     └── deployment.md           # instrucciones de despliegue del stack
 ```
 
-## Contibucion
--https://github.com/alvarezmarlen
+## Contribución
+
+**Autores principales:**
+- Marlén Álvarez ([@alvarezmarlen](https://github.com/alvarezmarlen))
+- Santiago Patiño Torres ([@SANTPT](https://github.com/SANTPT))
